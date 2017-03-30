@@ -22,9 +22,9 @@ function bazel_clean_and_fetch() {
   # bazel clean --expunge currently doesn't work on Windows
   # TODO(pcloudy): Re-enable it after bazel clean --expunge is fixed.
   if ! is_windows; then
-    bazel clean --expunge
+    bazel --output_base /tmp/bazelout --output_user_root /data/li/cache clean --expunge
   fi
-  bazel fetch "//tensorflow/... -//tensorflow/examples/android/..."
+  bazel --output_base /tmp/bazelout --output_user_root /data/li/cache fetch "//tensorflow/... -//tensorflow/examples/android/..."
 }
 
 ## Set up python-related environment settings
@@ -228,7 +228,7 @@ if [ "$TF_NEED_CUDA" == "1" ]; then
 while ! is_windows && true; do
   fromuser=""
   if [ -z "$GCC_HOST_COMPILER_PATH" ]; then
-    default_gcc_host_compiler_path=$(which gcc || true)
+    default_gcc_host_compiler_path=$(which gcc-4.8 || true)
     read -p "Please specify which gcc should be used by nvcc as the host compiler. [Default is $default_gcc_host_compiler_path]: " GCC_HOST_COMPILER_PATH
     fromuser="1"
     if [ -z "$GCC_HOST_COMPILER_PATH" ]; then

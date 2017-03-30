@@ -246,7 +246,7 @@ RdmaChannel::RdmaChannel(const RdmaAdapter* adapter, const string local_name,
     memset(&attr, 0, sizeof(ibv_qp_attr));
     attr.qp_state = IBV_QPS_INIT;
     attr.pkey_index = 0;
-    attr.port_num = 1;
+    attr.port_num = 2;
     attr.qp_access_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE;
 
     int mask = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT
@@ -257,13 +257,13 @@ RdmaChannel::RdmaChannel(const RdmaAdapter* adapter, const string local_name,
   // Local address
   {
     struct ibv_port_attr attr;
-    CHECK(!ibv_query_port(adapter_->context_, (uint8_t) 1, &attr))
+    CHECK(!ibv_query_port(adapter_->context_, (uint8_t) 2, &attr))
         << "Query port";
     self_.lid = attr.lid;
     self_.qpn = qp_->qp_num;
     self_.psn = static_cast<uint32_t>(random::New64()) & 0xffffff;
     union ibv_gid gid;
-    CHECK(!ibv_query_gid(adapter_->context_, (uint8_t) 1, 0, &gid)) 
+    CHECK(!ibv_query_gid(adapter_->context_, (uint8_t) 2, 0, &gid)) 
         << "Query gid";
     self_.snp = gid.global.subnet_prefix;
     self_.iid = gid.global.interface_id;
@@ -423,6 +423,7 @@ void RdmaChannel::InsertRecvCallback(string& key,
         std::function<void()> recv_done) {
   ct_mu_.lock();
   callback_table_.insert({key, recv_done});
+  LOG(INFO) << "inserting callback table element " << key;
   ct_mu_.unlock();
 }
 
@@ -434,6 +435,7 @@ void RdmaChannel::InsertRecvCallback(string& key,
 void RdmaChannel::RemoveRecvCallback(const string& key) {
   ct_mu_.lock();
   callback_table_.erase(key);
+  LOG(INFO) << "removing callback table element " << key;
   ct_mu_.unlock();
 }
 
@@ -445,6 +447,7 @@ void RdmaChannel::RemoveRecvCallback(const string& key) {
 void RdmaChannel::RunRecvCallback(const string& key) {
   ct_mu_.lock();
   CallbackTable::iterator iter = callback_table_.find(key);
+  LOG(INFO) << "Finding callback table element " << key;
   CHECK(iter != callback_table_.end());
   std::function<void()> recv_done = iter->second;
   ct_mu_.unlock();
@@ -482,7 +485,7 @@ void RdmaChannel::Connect(RdmaAddress& remoteAddr) {
     attr.ah_attr.dlid = remoteAddr.lid;
     attr.ah_attr.sl = 0;
     attr.ah_attr.src_path_bits = 0;
-    attr.ah_attr.port_num = 1;
+    attr.ah_attr.port_num = 2;
   
     int r;
     CHECK(!(r = ibv_modify_qp(qp_, &attr,

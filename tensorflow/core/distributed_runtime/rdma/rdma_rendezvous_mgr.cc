@@ -60,6 +60,7 @@ void RdmaRemoteRendezvous::RecvFromRemoteAsync(
   string key(std::move(parsed.FullKey().ToString()));
   string key_with_step_id = AppendStepidToKey(key, step_id_);
   // insert callback
+  LOG(INFO) << "Before inserting recv callback; step: "<< key_with_step_id;
   rc->InsertRecvCallback(key_with_step_id, 
     [this, key, key_with_step_id, rc, recv_args, parsed, done](){
       Status s;     
@@ -95,7 +96,7 @@ void RdmaRemoteRendezvous::RecvFromRemoteAsync(
         s = dst_dev->MakeTensorFromProto(proto,
                        recv_args.alloc_attrs, &val);
       }
-      
+      LOG(INFO) << "Before removing recv callback; step: "<< key_with_step_id;
       rc->RemoveRecvCallback(key_with_step_id);
       // create message
       RdmaMessage br;
